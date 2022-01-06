@@ -10,5 +10,6 @@ According to [CRISP-DM methodology](https://en.wikipedia.org/wiki/Cross-industry
 - step 2 is to make a model   
 in this project, I used 15 varieties of machine learning algorithms and also deep learning  
 - step 3 deployment, I'd rather deploy on telegram  
-> Telegram is the best social media app I've ever seen in my life.   
+> Telegram is the best social media app I've ever seen in my life.  
+>> I wouldn't like to write how many or which library I used in my project in the **readme file**. you can check pre-requirements in the requirements file. *Take it easy*   
 
