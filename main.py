@@ -2,6 +2,10 @@ from telegram.ext import *
 from io import BytesIO
 import numpy as np
 import cv2
+from tensorflow import keras
+
+# objects
+class_name = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 with open('token.txt', 'r') as f:
     token = f.read()
@@ -10,15 +14,20 @@ def start(update,context):
     update.message.reply_text("Hello, I am a bot that can help you to classify the news is fake or not and also \nTell you the name of the objects \n")
 
 def help(update,context):
-    update.message.reply_text("You can type /start to see the help")
-
-def train(update,context):
-    pass
+    update.message.reply_text("""
+                              /start - start the bot
+/help - show this message
+Brief Explanation
+First mission : when you send a photo, I'll predict the names of objects
+I know these objects' aeroplane, automobile, bird, cat, deer, dog, frog, horse, ship, truck
+                              """)
 
 def handle_message(update,context):
     update.message.reply_text("ok")
 
 def handle_photo(update,context):
+    update.message.reply_text("I am processing your image")
+    
     file = context.bot.get_file(update.message.photo[-1].file_id)
     f = BytesIO(file.download_as_bytearray())
     file_bytes = np.asarray(bytearray(f.read()), dtype=np.uint8)
@@ -27,7 +36,10 @@ def handle_photo(update,context):
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     img = cv2.resize(img, (32, 32),interpolation=cv2.INTER_AREA)
     
-    update.message.reply_text("I am processing your image")
+    reconstructed_model = keras.models.load_model('object_detection_model.h5')
+    prediction = reconstructed_model.predict(np.array([img/255]))
+    
+    update.message.reply_text("It's probably {}".format(class_name[np.argmax(prediction)]))
 
 # use proxy to connect to the server   
 REQUEST_KWARGS = { 'proxy_url': 'socks5h://127.0.0.1:9150' }
