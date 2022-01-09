@@ -7,6 +7,16 @@ import pickle
 import string
 from nltk.corpus import stopwords
 from nltk.stem.wordnet import WordNetLemmatizer
+import random
+import json
+from tensorflow.keras.models import load_model
+import nltk
+
+# load pickle - chatbot
+words = pickle.load(open('words.pkl','rb'))
+classes = pickle.load(open('classes.pkl','rb'))
+intent_dict = pickle.load(open('intent_dict.pkl','rb'))
+model_chatbot = load_model('chatbot_model.h5')
 
 # objects
 class_name = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
@@ -24,6 +34,7 @@ def help(update,context):
 Brief Explanation
 First mission : when you send a photo, I'll predict the names of objects
 I know these objects' aeroplane, automobile, bird, cat, deer, dog, frog, horse, ship, truck
+Second mission : when you send a text, I'll predict the news is fake or not
                               """)
     
 # load the model and vectorizer - label_encoder.pickle and vectorizer.pickle and svc_news_detection.pickle
@@ -48,21 +59,47 @@ def text_preprocessing(text):
     text = ''.join(text)
     # remove stopwords
     text = [word for word in text.split() if word not in stopwords.words('english')]
+    if len(text) >= 36:
+        pass
+        # text = [word for word in text.split() if word not in stopwords.words('english')]
     # lemmatize
     lemmatizer = WordNetLemmatizer()
     text = [lemmatizer.lemmatize(word) for word in text]
     return text
 
+
+# chat bot function
+def bag_of_words(sentence):
+    sentence = text_preprocessing(sentence)
+    bag = [0]*len(words)
+    for w in sentence:
+        for i,word in enumerate(words):
+            if word == w:
+                bag[i] = 1
+    return np.array(bag)
+
+def predict_class(sentence):
+    bow = bag_of_words(sentence)
+    res = model_chatbot.predict(np.array([bow]))[0]
+    ERROR_THRESHOLD = 0.25
+    results = [[i,r] for i,r in enumerate(res) if r>ERROR_THRESHOLD]
+    results.sort(key=lambda x: x[1], reverse=True)
+    return_list = []
+    for r in results:
+        print(r)
+        return_list.append({"intent": classes[r[0]], "probability": str(r[1])})
+    return return_list
+
 def handle_message(update,context):
-    
     text = update.message.text
-    text = text_preprocessing(text)
-    text = [' '.join(text)]
-    text_vec = vec.transform(text)
     
     if len(text) <= 36:
-        update.message.reply_text("ChatBOT")
+        ints = predict_class(text)
+        update.message.reply_text(intent_dict[ints[0]['intent']][random.randint(0,len(intent_dict[ints[0]['intent']])-1)])
     else:
+        text = text_preprocessing(text)
+        text = [' '.join(text)]
+        text_vec = vec.transform(text)
         predict = str(le.inverse_transform(svc.predict(text_vec)))
         update.message.reply_text("It's probably {}".format(predict))    
 
